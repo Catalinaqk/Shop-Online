@@ -19,21 +19,24 @@ public class Product {
     @Column(length = 500)
     private String description;
 
-    // (Opțional) Poți adăuga și un URL pentru imagine
-    // private String imageUrl;
+    @Column(length = 50)
+    private String category;
 
-    // Getteri, Setteri și Constructori
+    // AM ȘTERS CÂMPUL 'imageUrl' DE AICI
 
     public Product() {
     }
 
-    public Product(String name, Double price, String description) {
+    // CONSTRUCTORUL ACTUALIZAT (ARE ACUM 4 PARAMETRI, FĂRĂ POZĂ)
+    public Product(String name, Double price, String description, String category) {
         this.name = name;
         this.price = price;
         this.description = description;
+        this.category = category;
     }
 
-    // Click dreapta -> Generate -> Getters and Setters... (selectează-le pe toate)
+    // Getteri și Setteri
+
     public Long getId() {
         return id;
     }
@@ -65,4 +68,14 @@ public class Product {
     public void setDescription(String description) {
         this.description = description;
     }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    // AM ȘTERS GETTER ȘI SETTER PENTRU 'imageUrl'
 }
