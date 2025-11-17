@@ -11,7 +11,6 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,12 +20,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableMethodSecurity
 public class WebSecurityConfig {
+    @Autowired
+    UserDetailsServiceImpl userDetailsService;
 
     @Autowired
-    private UserDetailsServiceImpl userDetailsService;
-
-    @Autowired
-    private AuthEntryPointJwt unauthorizedHandler;
+    AuthEntryPointJwt unauthorizedHandler;
 
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
@@ -36,8 +34,10 @@ public class WebSecurityConfig {
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
+
         return authProvider;
     }
 
@@ -53,27 +53,20 @@ public class WebSecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
+        http.csrf(csrf -> csrf.disable())
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // ====================================================================
-                // 👇 AICI ESTE SECȚIUNEA CORECTATĂ 👇
-                // ====================================================================
-                .authorizeHttpRequests(auth -> auth
-                        // 1. Pune TOATE rutele publice (permitAll) la început
-                        .requestMatchers("/api/auth/**", "/api/products").permitAll()
-
-                        // (Opțional) Poți adăuga și alte rute publice aici
-                        // .requestMatchers("/api/public/**").permitAll()
-
-                        // 2. Pune regula "prinde-tot" (catch-all) LA FINAL
-                        .anyRequest().authenticated()
+                .authorizeHttpRequests(auth ->
+                        auth.requestMatchers("/api/auth/**").permitAll() // Login și Register sunt publice
+                                .requestMatchers("/api/test/**").permitAll()
+                                .requestMatchers("/ws-shop/**").permitAll() // <--- IMPORTANT PENTRU WEBSOCKET
+                                .requestMatchers("/api/notifications/**").permitAll() // <--- IMPORTANT PENTRU TEST NOTIFICĂRI
+                                .requestMatchers("/api/products/**").permitAll() // Lăsăm produsele publice (opțional)
+                                .anyRequest().authenticated() // Orice altceva cere login
                 );
-        // ====================================================================
 
         http.authenticationProvider(authenticationProvider());
+
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
